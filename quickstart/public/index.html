@@ -8,12 +8,11 @@
   <script src="face_cam_js/face-min.js"></script>
   <script src="face_cam_js/dat.gui.min.js"></script>
   <script src="face_cam_js/stats.min.js"></script>
+  <script src="face_cam_js/color_camera_gui.js"></script>
+  <script src="face_cam_js/color_camera_gui.js"></script>
+  <script src="rickshaw.min.js"></script>
+  <script src="d3.min.js"></script>
 
-  <style>
-  video, canvas {
-    position: relative;
-  }
-  </style>
 
 </head>
 <body>
@@ -22,45 +21,57 @@
   <div id="preview">
     <p class="instructions">Sveicināts videozvanā</p>
     <div id="local-media">
-
-      <video id="video"  preload autoplay loop muted></video>
-      <canvas id="canvas" ></canvas>
-
-      <script>
-          window.onload = function() {
-            var video = document.getElementById('video');
-            var canvas = document.getElementById('canvas');
-            var context = canvas.getContext('2d');
-
-            var tracker = new tracking.ObjectTracker('face');
-            tracker.setInitialScale(4);
-            tracker.setStepSize(2);
-            tracker.setEdgesDensity(0.1);
-
-            tracking.track('#video', tracker, { camera: true });
-
-            tracker.on('track', function(event) {
-              context.clearRect(0, 0, canvas.width, canvas.height);
-
-              event.data.forEach(function(rect) {
-                context.strokeStyle = '#a64ceb';
-                context.strokeRect(rect.x, rect.y, rect.width, rect.height);
-                context.font = '11px Helvetica';
-                context.fillStyle = "#fff";
-                context.fillText('x: ' + rect.x + 'px', rect.x + rect.width + 5, rect.y + 11);
-                context.fillText('y: ' + rect.y + 'px', rect.x + rect.width + 5, rect.y + 22);
-              });
-            });
-// controls for face tracker
-            // var gui = new dat.GUI();
-            // gui.add(tracker, 'edgesDensity', 0.1, 0.5).step(0.01);
-            // gui.add(tracker, 'initialScale', 1.0, 10.0).step(0.1);
-            // gui.add(tracker, 'stepSize', 1, 5).step(0.1);
-          };
-        </script>
+      <video id="video" class="video"  preload autoplay loop muted></video>
+      <canvas id="canvas" class="video" ></canvas>
+      <canvas id="canvasOverlay" class="video"></canvas>
 
     </div>
-    <button id="button-preview">Preview My Camera</button>
+    <button id="button-preview">Aplūkot savu video</button>
+    <script>
+      //   window.onload = function() {
+      //        console.log("sveika gauja");
+      //          window.onload = function() {
+      //  document.getElementById("button-preview").onclick = function()  {
+      //    console.log("sveika gaujaaa");
+      // //   headTrack();
+     //  //    return;
+     //   };
+     // };
+    //     window.onload = function headTrack();
+  //     };
+//           var video = document.getElementById('video');
+//           var canvas = document.getElementById('canvas');
+//           var context = canvas.getContext('2d');
+//
+//           var tracker = new tracking.ObjectTracker('face');
+//           tracker.setInitialScale(4);
+//           tracker.setStepSize(2);
+//           tracker.setEdgesDensity(0.1);
+//
+//           tracking.track('#video', tracker, { camera: true });
+//
+//           tracker.on('track', function(event) {
+//             context.clearRect(0, 0, canvas.width, canvas.height);
+//
+//             event.data.forEach(function(rect) {
+//               context.strokeStyle = '#a64ceb';
+//               context.strokeRect(rect.x, rect.y, rect.width, rect.height);
+//               context.font = '11px Helvetica';
+//               context.fillStyle = "#fff";
+//               context.fillText('x: ' + rect.x + 'px', rect.x + rect.width + 5, rect.y + 11);
+//               context.fillText('y: ' + rect.y + 'px', rect.x + rect.width + 5, rect.y + 22);
+//             });
+//           });
+// // controls for face tracker
+// //             var gui = new dat.GUI();
+// //             gui.add(tracker, 'edgesDensity', 0.1, 0.5).step(0.01);
+// //             gui.add(tracker, 'initialScale', 1.0, 10.0).step(0.1);
+// //             gui.add(tracker, 'stepSize', 1, 5).step(0.1);
+// //
+    //    };
+    //  };
+      </script>
+
   </div>
   <div id="room-controls">
     <p class="instructions">Istabas nosaukums:</p>
@@ -69,6 +80,17 @@
     <button id="button-leave">Beigt zvanu</button>
   </div>
   <div id="log"></div>
+  <div id="heartbeat"></div>
+
+<div id="graphs">
+  <div id="rawDataGraphContainer">
+    <div id="rawDataGraphic" class="graph"></div>
+     <!-- <p id="rawDataLabel">Change in brightness (raw video data)</p> -->
+  </div>
+  <div id="confidenceGraph" class="graph"></div>
+
+</div>
+
 </div>
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
