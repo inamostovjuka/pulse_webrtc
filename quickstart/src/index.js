@@ -1,6 +1,8 @@
 'use strict';
 var Video = require('twilio-video');
-
+var Rickshaw = require('rickshaw');
+var normalize = require('./math');
+var dataSend = require('WebSocketServer');
 var activeRoom;
 var previewTracks;
 var identity;
@@ -47,11 +49,11 @@ $.getJSON('/token', function(data) {
   document.getElementById('button-join').onclick = function() {
     roomName = document.getElementById('room-name').value;
     if (!roomName) {
-      alert('Please enter a room name.');
+      alert('Lūdzu ievadiet istabas nosaukumu');
       return;
     }
 
-    log("Joining room '" + roomName + "'...");
+    log("Pievienojas istabai '" + roomName + "'...");
     var connectOptions = {
       name: roomName,
       logLevel: 'debug'
@@ -64,13 +66,13 @@ $.getJSON('/token', function(data) {
     // Join the Room with the token from the server and the
     // LocalParticipant's Tracks.
     Video.connect(data.token, connectOptions).then(roomJoined, function(error) {
-      log('Could not connect to Twilio: ' + error.message);
+      log('Nevar savienot Twilio: ' + error.message);
     });
   };
 
   // Bind button to leave Room.
   document.getElementById('button-leave').onclick = function() {
-    log('Leaving room...');
+    log('Pamest istabu...');
     activeRoom.disconnect();
   };
 });
@@ -84,7 +86,7 @@ function roomJoined(room) {
   // //
   //  room.localParticipant.addTrack(dataTrack);
 
-  log("Joined as '" + identity + "'");
+  log("Pievienojās kā '" + identity + "'");
   document.getElementById('button-join').style.display = 'none';
   document.getElementById('button-leave').style.display = 'inline';
 
@@ -96,14 +98,14 @@ function roomJoined(room) {
 
   // Attach the Tracks of the Room's Participants.
   room.participants.forEach(function(participant) {
-    log("Already in Room: '" + participant.identity + "'");
+    log("Šobrīd istabā '" + participant.identity + "'");
     var previewContainer = document.getElementById('remote-media');
     attachParticipantTracks(participant, previewContainer);
   });
 
   // When a Participant joins the Room, log the event.
   room.on('participantConnected', function(participant) {
-    log("Joining: '" + participant.identity + "'");
+    log("Pievienojas '" + participant.identity + "'");
   });
 
   // When a Participant adds a Track, attach it to the DOM.
@@ -132,7 +134,7 @@ function roomJoined(room) {
 // //  };
   //   return;
 
-    log(participant.identity + " added track: " + track.kind);
+    log(participant.identity + " Pievienots " + track.kind);
     var previewContainer = document.getElementById('remote-media');
     attachTracks([track], previewContainer);
   });
@@ -145,14 +147,14 @@ function roomJoined(room) {
 
   // When a Participant leaves the Room, detach its Tracks.
   room.on('participantDisconnected', function(participant) {
-    log("Participant '" + participant.identity + "' left the room");
+    log("Lietotājs '" + participant.identity + "' pameta istabu");
     detachParticipantTracks(participant);
   });
 
   // Once the LocalParticipant leaves the room, detach the Tracks
   // of all Participants, including that of the LocalParticipant.
   room.on('disconnected', function() {
-    log('Left');
+    log('Atvienojās');
     if (previewTracks) {
       previewTracks.forEach(function(track) {
         track.stop();
@@ -167,7 +169,6 @@ function roomJoined(room) {
 }
 
 // Preview LocalParticipant's Tracks.
-//console.log("sveika gaju");
 document.getElementById('button-preview').onclick = function() {
 
   var localTracksPromise = previewTracks
@@ -182,7 +183,7 @@ document.getElementById('button-preview').onclick = function() {
     }
   }, function(error) {
     console.error('Unable to access local media', error);
-    log('Unable to access Camera and Microphone');
+    log('Neizdodas piekļūt kamerai un mikrafonam');
   });
 
   //   window.onload = function() {
@@ -196,7 +197,7 @@ document.getElementById('button-preview').onclick = function() {
 //          canvasOverlay.setAttribute("height", height);
           var overlayContext = canvasOverlay.getContext('2d');
           var tracker = new tracking.ObjectTracker('face');
-          var  blur = false;
+          var blur = false;
           var rawDataGraphic;
           var heartrate = 60;
           var bufferWindow = 512;
@@ -210,6 +211,10 @@ document.getElementById('button-preview').onclick = function() {
           var graphing = false;
           var fps = 15;
           var forehead;
+          var graphData;
+          var renderTimer;
+          var dataSend;
+          var heartbeatTimer;
 
   //        canvasOverlay.clearRect(0, 0, width, height);
 
@@ -218,27 +223,23 @@ document.getElementById('button-preview').onclick = function() {
           var blue = [];
 
           navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
-
           window.URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
-
-
 
           overlayContext.clearRect(0, 0, video.width, video.height);
 
-          // rawDataGraphic = new Rickshaw.Graph ( {
-          //   element: document.getElementById("rawDataGraphic"),
-          //   width: 600,
-          //   height: 120,
-          //   renderer: "line",
-          //   min: -2,
-          //   interpolation: "basis",
-          //   series: new Rickshaw.Series.FixedDuration([{ name: "one" }], undefined, {
-          //     timeInterval: 1000/fps,
-          //     maxDataPoints: 300,
-          //     time: new Date().getTime() / 1000
-          //   })
-          // });
-
+          rawDataGraphic = new Rickshaw.Graph ( {
+            element: document.getElementById("rawDataGraphic"),
+            width: 600,
+            height: 120,
+            renderer: "line",
+            min: -2,
+            interpolation: "basis",
+            series: new Rickshaw.Series.FixedDuration([{ name: "one" }], undefined, {
+              timeInterval: 1000/fps,
+              maxDataPoints: 300,
+              time: new Date().getTime() / 1000
+            })
+          });
           tracker.setInitialScale(4);
           tracker.setStepSize(2);
           tracker.setEdgesDensity(0.1);
@@ -250,7 +251,7 @@ document.getElementById('button-preview').onclick = function() {
 
             event.data.forEach(function(rect) {
               context.strokeStyle = '#a64ceb';
-              context.strokeRect((rect.x)+20, (rect.y)-15, rect.width, (rect.height)-20);
+              context.strokeRect((rect.x)+20, (rect.y)-15, rect.width, (rect.height)-40);
               context.font = '11px Helvetica';
             //   context.fillStyle = "#fff";
             //   context.fillText('x: ' + rect.x + 'px', rect.x + rect.width + 2, rect.y + 11);
@@ -258,8 +259,8 @@ document.getElementById('button-preview').onclick = function() {
                document.addEventListener("facetracking", greenRect())
             });
             function greenRect() {
-              overlayContext.clearRect(0, 0, canvas.width, canvas.height);
-               var width = canvas.width;
+      //        overlayContext.clearRect(0, 0, canvas.width, canvas.height);
+              var width = canvas.width;
               var height = canvas.height;
             event.data.forEach(function(rct) {
               var sx, sy, sw, sh, forhead, inpos, outpos;
@@ -267,27 +268,27 @@ document.getElementById('button-preview').onclick = function() {
               var redSum = 0;
               var blueSum = 0;
               // forehead based on facetrackingrct
-              sx = rct.x + (-(rct.width/5)) + 85 ;
-              sy = rct.y + (-(rct.height/3)) + 30 ;
+              sx = rct.x + (-(rct.width/5)) + 80 ;
+              sy = rct.y + (-(rct.height/3)) + 25 ;
               sw = (rct.width/5) ;
               sh = (rct.width/10) ;
 
         //      if (rct.detection == "CS") {
-            //    overlayContext.rotate(rct.angle-(Math.PI/2));
-            //    overlayContext.strokeStyle = "#00CC00";
-            //    overlayContext.strokeRect(rct.x + (-(rct.width/2)) >> 0, rct.y + (-(rct.width/2)) >> 0, rct.width, rct.width);
+          //     overlayContext.rotate(rct.angle-(Math.PI/2));
+          //     overlayContext.strokeStyle = "#00CC00";
+          //     overlayContext.strokeRect((rct.x)+20 + (-(rct.width/2)), (rct.y)+35 + (-(rct.width/2)), rct.width, (rct.width)-40);
           // for debugging: blue forehead box
-                overlayContext.strokeStyle = "#33CCFF";
-                overlayContext.strokeRect(sx, sy, sw, sh);
+                context.strokeStyle = "#33CCFF";
+                context.strokeRect(sx, sy, sw, sh);
           // turn green
                 forehead = context.getImageData(sx, sy, sw, sh);
-                //for each frame get summ of green area
+                //for each frame get summ of forehead green area
                 var i;
                 for (i = 0; i < forehead.data.length; i+=4) {
                   redSum = forehead.data[i] + redSum;
                   greenSum = forehead.data[i+1] + greenSum;
                   blueSum = forehead.data[i+2] + blueSum;
-
+                  console.log("1");
                 }
                 var redAverage = redSum/(forehead.data.length/4);
                 var greenAverage = greenSum/(forehead.data.length/4);
@@ -297,8 +298,10 @@ document.getElementById('button-preview').onclick = function() {
                   red.push(redAverage);
                   green.push(greenAverage);
                   blue.push(blueAverage);
+                  console.log("1.2");
                   if (green.length > bufferWindow/8){
                     sendingData = true;
+                    console.log("2");
                   }
                 } else {
                   red.push(redAverage);
@@ -307,23 +310,170 @@ document.getElementById('button-preview').onclick = function() {
                   green.shift();
                   blue.push(blueAverage);
                   blue.shift();
+                  console.log("3");
                 }
+                graphData = {one: normalize(green)[green.length-1]}
+                rawDataGraphic.series.addData(graphData);
+                rawDataGraphic.update();
 
-                // graphData = {one: normalize(green)[green.length-1]}
-                // rawGraph.series.addData(graphData);
-                // rawGraph.update();
-                //
-                // if (graphing === false){
-                //   var rickshawAxis = document.getElementById("rawDataLabel");
-                //   rickshawAxis.style.display = "block";
-                //   graphing = true;
-                // }
-
+                if (graphing === false){
+                  var rickshawAxis = document.getElementById("rawDataLabel");
+                  rickshawAxis.style.display = "block";
+                  graphing = true;
+                  console.log("4");
+                }
                 overlayContext.rotate((Math.PI/2)-event.angle);
           //    }
             })
           }
+          // countdown time
+          function drawCountdown(array){
+            countdownContext.font = "20pt Helvetica";
+            countdownContext.clearRect(0,0,200,100);
+            countdownContext.save();
+            countdownContext.fillText(((bufferWindow - array.length)/fps) >> 0, 25, 25);
+            countdownContext.restore();
+            console.log("5");
+          }
 
+          function cardiac(array, bfwindow) {
+            spectrum = array;
+            var freqs = frequencyExtract(spectrum, fps);
+            var freq = freqs.freq_in_hertz;
+            heartrate = freq * 60;
+
+            showConfidenceGraph(freqs,600, 100);
+            heartbeatCircle(heartrate);
+            // measuring pulsing cicle and create average of last five results
+            if (heartrateAverage.length < 3){
+              heartrateAverage.push(heartrate);
+              hrAV = heartrate;
+            } else {
+              heartrateAverage.push(heartrate);
+              heartrateAverage.shift();
+              hrAv = mean(heartrateAverage);
+            }
+          };
+
+          function heartbeatCircle(heartrate){
+              var cx = $("#heartbeat").width() / 2;
+              var cy = $("#heartbeat").width() / 2;
+              r = $("#heartbeat").width() / 4;
+
+              if (circle) {
+                circleSVG.select("text").text(heartrate >> 0);
+
+              } else {
+                circleSVG = d3.select("#heartbeat")
+                              .append("svg")
+                              .attr("width", cx * 2)
+                              .attr("height", cy * 2);
+                circle = circleSVG.append("circle")
+                                  .attr("cx", cx)
+                                  .attr("cy", cy)
+                                  .attr("r", r)
+                                  .attr("fill", "#DA755C");
+                circleSVG.append("text")
+                         .text(heartrate >> 0)
+                         .attr("text-anchor", "middle")
+                         .attr("x", cx )
+                         .attr("y", cy + 10)
+                         .attr("font-size", "26pt")
+                         .attr("fill", "white");
+              }
+            }
+
+            function showConfidenceGraph(data, width, height){
+  // **  x == filteredFreqBin, y == normalizedFreqs **
+  var max = _.max(data.normalizedFreqs);
+  data.filteredFreqBin = _.map(data.filteredFreqBin, function(num){return num * 60});
+  var data = _.zip(data.normalizedFreqs, data.filteredFreqBin);
+
+  if (confidenceGraph){
+    y = d3.scale.linear().domain([ 0, max]).range([height, 0]);
+    confidenceGraph.select("path").transition().attr("d", line(data)).attr("class", "line").ease("linear").duration(750);
+  } else {
+    x = d3.scale.linear().domain([48, 180]).range([0, width - 20]);
+    y = d3.scale.linear().domain([0, max]).range([height, 0]);
+
+    confidenceGraph = d3.select("#confidenceGraph").append("svg").attr("width", width).attr("height", 150);
+
+    xAxis = d3.svg.axis().scale(x).tickSize(-height).tickSubdivide(true);
+
+    line = d3.svg.line()
+                  .x(function(d) { return x(+d[1]); })
+                  .y(function(d) { return y(+d[0]); });
+
+    confidenceGraph.append("svg:path").attr("d", line(data)).attr("class", "line");
+    confidenceGraph.append("g").attr("class", "x axis").attr("transform", "translate(0," + height + ")").call(xAxis);
+    confidenceGraph.append("text").attr("x", 235).attr("y", height + 40).style("text-anchor", "end").text("Confidence in frequency in BPM").attr("font-size", "12pt").attr("fill", "steelblue");
+  }
+}
+
+function clearConfidenceGraph(){
+  var confidenceClear = document.getElementById("confidenceGraph");
+  while (confidenceClear.firstChild){
+    confidenceClear.removeChild(confidenceClear.firstChild);
+  }
+}
+//function startCapture(){
+//  video.play();
+
+//   // ** set the framerate and draw the video the canvas at the desired fps **
+//     renderTimer = setInterval(function(){
+//     context.drawImage(canvas, 0, 0, width, height);
+//   }, Math.round(1000 / fps));
+// //   dataSend = setInterval(function(){
+// //     if (sendingData){
+// //     sendData(JSON.stringify({"array": [red, green, blue], "bufferWindow": green.length}));
+// //   }
+// //
+// // }, Math.round(1000));
+heartbeatTimer = setInterval(function(){
+    var duration = Math.round(((60/hrAv) * 1000)/4);
+    if (confidenceGraph){
+       if (toggle % 2 == 0){
+          circleSVG.select("circle")
+                 .transition()
+                 .attr("r", r)
+                 .duration(duration);
+        } else {
+          circleSVG.select("circle")
+                 .transition()
+                 .attr("r", r + 15)
+                 .duration(duration);
+        }
+        if (toggle == 10){
+          toggle = 0;
+        }
+        toggle++;
+      }
+  }, Math.round(((60/hrAv) * 1000)/2));
+  heartbeatTimer = setInterval(function(){
+      var duration = Math.round(((60/hrAv) * 1000)/4);
+      if (confidenceGraph){
+         if (toggle % 2 == 0){
+            circleSVG.select("circle")
+                   .transition()
+                   .attr("r", r)
+                   .duration(duration);
+          } else {
+            circleSVG.select("circle")
+                   .transition()
+                   .attr("r", r + 15)
+                   .duration(duration);
+          }
+          if (toggle == 10){
+            toggle = 0;
+          }
+          toggle++;
+        }
+    }, Math.round(((60/hrAv) * 1000)/2));
+
+
+    // ** begin headtracking! **
+  //  headtrack();
+//  };
 
 
           });

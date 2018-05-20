@@ -154,8 +154,34 @@ canvas, canvasOverlay {
 /* video, canvas {
   position: relative; */
 }
+#rawDataLabel {
+  font-size: 12pt;
+  color: steelblue;
+  position: relative;
+  display: none;
+  right: 0px;
+  top: 175px;
+}
 
-/* canvas {
-  top: -95%;
-  left: 10%;
-} */
+#graphs {
+  position: relative;
+  top: 50px;
+  z-index: -1;
+  width: 95%;
+  margin: auto;
+  height: 200px;
+}
+#graph {
+  width: 600px;
+  height: 210px;
+  position: relative;
+  top: 180px;
+  /*top: -260px;*/
+  z-index: -1;
+  background-color: #DA755C;
+}
+#confidenceGraph {
+  width: 600px;
+  height: 160px;
+  margin: 20px;
+}

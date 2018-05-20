@@ -10,10 +10,7 @@
   <script src="face_cam_js/stats.min.js"></script>
   <script src="face_cam_js/color_camera_gui.js"></script>
   <script src="face_cam_js/color_camera_gui.js"></script>
-  <script src="rickshaw.min.js"></script>
-  <script src="d3.min.js"></script>
-
-
+  <script src="face_cam_js/dsp.js"></script>
 </head>
 <body>
 <div id="remote-media"></div>
@@ -26,7 +23,7 @@
       <canvas id="canvasOverlay" class="video"></canvas>
 
     </div>
-    <button id="button-preview">Aplūkot savu video</button>
+    <button id="button-preview">Priekšskatīt savu video</button>
     <script>
       //   window.onload = function() {
       //        console.log("sveika gauja");
@@ -75,7 +72,7 @@
   </div>
   <div id="room-controls">
     <p class="instructions">Istabas nosaukums:</p>
-    <input id="room-name" type="text" placeholder="Enter a room name" />
+    <input id="room-name" type="text" placeholder="Ievadiet istabas nosaukumu" />
     <button id="button-join">Pievienoties zvanam</button>
     <button id="button-leave">Beigt zvanu</button>
   </div>
@@ -85,7 +82,7 @@
 <div id="graphs">
   <div id="rawDataGraphContainer">
     <div id="rawDataGraphic" class="graph"></div>
-     <!-- <p id="rawDataLabel">Change in brightness (raw video data)</p> -->
+     <p id="rawDataLabel">Change in brightness (raw video data)</p>
   </div>
   <div id="confidenceGraph" class="graph"></div>
 
