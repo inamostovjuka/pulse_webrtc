@@ -197,7 +197,6 @@ document.getElementById('button-preview').onclick = function() {
 //          canvasOverlay.setAttribute("height", height);
           var overlayContext = canvasOverlay.getContext('2d');
           var tracker = new tracking.ObjectTracker('face');
-          var blur = false;
           var rawDataGraphic;
           var heartrate = 60;
           var bufferWindow = 512;
@@ -215,6 +214,7 @@ document.getElementById('button-preview').onclick = function() {
           var renderTimer;
           var dataSend;
           var heartbeatTimer;
+          var confidenceGraph;
 
   //        canvasOverlay.clearRect(0, 0, width, height);
 
@@ -225,7 +225,7 @@ document.getElementById('button-preview').onclick = function() {
           navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
           window.URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
 
-          overlayContext.clearRect(0, 0, video.width, video.height);
+      //    overlayContext.clearRect(0, 0, video.width, video.height);
 
           rawDataGraphic = new Rickshaw.Graph ( {
             element: document.getElementById("rawDataGraphic"),
@@ -240,6 +240,47 @@ document.getElementById('button-preview').onclick = function() {
               time: new Date().getTime() / 1000
             })
           });
+
+          // red = [];
+          // green = [];
+          // blue = [];
+          // confidenceGraph = null;
+          // clearConfidenceGraph();
+
+          function clearConfidenceGraph(){
+            var confidenceClear = document.getElementById("confidenceGraph");
+            while (confidenceClear.firstChild){
+              confidenceClear.removeChild(confidenceClear.firstChild);
+            }
+          }
+
+          renderTimer = setInterval(function(){
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+          }, Math.round(1000 / fps));
+
+          heartbeatTimer = setInterval(function(){
+            var duration = Math.round(((60/hrAv) * 1000)/4);
+            if (confidenceGraph){
+               if (toggle % 2 == 0){
+                  circleSVG.select("circle")
+                         .transition()
+                         .attr("r", r)
+                         .duration(duration);
+                } else {
+                  circleSVG.select("circle")
+                         .transition()
+                         .attr("r", r + 15)
+                         .duration(duration);
+                }
+                if (toggle == 10){
+                  toggle = 0;
+                }
+                toggle++;
+              }
+          }, Math.round(((60/hrAv) * 1000)/2));
+
+
+
           tracker.setInitialScale(4);
           tracker.setStepSize(2);
           tracker.setEdgesDensity(0.1);
@@ -247,12 +288,12 @@ document.getElementById('button-preview').onclick = function() {
           tracking.track('#video', tracker, { camera: true });
 
           tracker.on('track', function(event) {
-            context.clearRect(0, 0, canvas.width, canvas.height);
+            overlayContext.clearRect(0, 0, canvas.width, canvas.height);
 
             event.data.forEach(function(rect) {
-              context.strokeStyle = '#a64ceb';
-              context.strokeRect((rect.x)+20, (rect.y)-15, rect.width, (rect.height)-40);
-              context.font = '11px Helvetica';
+              overlayContext.strokeStyle = '#a64ceb';
+              overlayContext.strokeRect((rect.x)+20, (rect.y)-15, rect.width, (rect.height)-40);
+              overlayContext.font = '11px Helvetica';
             //   context.fillStyle = "#fff";
             //   context.fillText('x: ' + rect.x + 'px', rect.x + rect.width + 2, rect.y + 11);
             //   context.fillText('y: ' + rect.y + 'px', rect.x + rect.width + 5, rect.y + 22);
@@ -278,8 +319,8 @@ document.getElementById('button-preview').onclick = function() {
           //     overlayContext.strokeStyle = "#00CC00";
           //     overlayContext.strokeRect((rct.x)+20 + (-(rct.width/2)), (rct.y)+35 + (-(rct.width/2)), rct.width, (rct.width)-40);
           // for debugging: blue forehead box
-                context.strokeStyle = "#33CCFF";
-                context.strokeRect(sx, sy, sw, sh);
+                overlayContext.strokeStyle = "#33CCFF";
+                overlayContext.strokeRect(sx, sy, sw, sh);
           // turn green
                 forehead = context.getImageData(sx, sy, sw, sh);
                 //for each frame get summ of forehead green area
@@ -288,20 +329,21 @@ document.getElementById('button-preview').onclick = function() {
                   redSum = forehead.data[i] + redSum;
                   greenSum = forehead.data[i+1] + greenSum;
                   blueSum = forehead.data[i+2] + blueSum;
-                  console.log("1");
+
                 }
+
+
                 var redAverage = redSum/(forehead.data.length/4);
                 var greenAverage = greenSum/(forehead.data.length/4);
                 var blueAverage = blueSum/(forehead.data.length/4);
 
                 if (green.length < bufferWindow){
+
                   red.push(redAverage);
                   green.push(greenAverage);
                   blue.push(blueAverage);
-                  console.log("1.2");
                   if (green.length > bufferWindow/8){
                     sendingData = true;
-                    console.log("2");
                   }
                 } else {
                   red.push(redAverage);
@@ -310,7 +352,6 @@ document.getElementById('button-preview').onclick = function() {
                   green.shift();
                   blue.push(blueAverage);
                   blue.shift();
-                  console.log("3");
                 }
                 graphData = {one: normalize(green)[green.length-1]}
                 rawDataGraphic.series.addData(graphData);
@@ -320,23 +361,22 @@ document.getElementById('button-preview').onclick = function() {
                   var rickshawAxis = document.getElementById("rawDataLabel");
                   rickshawAxis.style.display = "block";
                   graphing = true;
-                  console.log("4");
                 }
-                overlayContext.rotate((Math.PI/2)-event.angle);
+            //    overlayContext.rotate((Math.PI/2)-event.angle);
           //    }
             })
           }
           // countdown time
-          function drawCountdown(array){
-            countdownContext.font = "20pt Helvetica";
-            countdownContext.clearRect(0,0,200,100);
-            countdownContext.save();
-            countdownContext.fillText(((bufferWindow - array.length)/fps) >> 0, 25, 25);
-            countdownContext.restore();
-            console.log("5");
-          }
+          // function drawCountdown(array){
+          //   countdownContext.font = "20pt Helvetica";
+          //   countdownContext.clearRect(0,0,200,100);
+          //   countdownContext.save();
+          //   countdownContext.fillText(((bufferWindow - array.length)/fps) >> 0, 25, 25);
+          //   countdownContext.restore();
+          // }
 
           function cardiac(array, bfwindow) {
+            console.log("cardiac");
             spectrum = array;
             var freqs = frequencyExtract(spectrum, fps);
             var freq = freqs.freq_in_hertz;
@@ -356,6 +396,7 @@ document.getElementById('button-preview').onclick = function() {
           };
 
           function heartbeatCircle(heartrate){
+              console.log("hearbeatcircle");
               var cx = $("#heartbeat").width() / 2;
               var cy = $("#heartbeat").width() / 2;
               r = $("#heartbeat").width() / 4;
@@ -384,6 +425,7 @@ document.getElementById('button-preview').onclick = function() {
             }
 
             function showConfidenceGraph(data, width, height){
+              console.log("confidencegraph");
   // **  x == filteredFreqBin, y == normalizedFreqs **
   var max = _.max(data.normalizedFreqs);
   data.filteredFreqBin = _.map(data.filteredFreqBin, function(num){return num * 60});
@@ -410,12 +452,7 @@ document.getElementById('button-preview').onclick = function() {
   }
 }
 
-function clearConfidenceGraph(){
-  var confidenceClear = document.getElementById("confidenceGraph");
-  while (confidenceClear.firstChild){
-    confidenceClear.removeChild(confidenceClear.firstChild);
-  }
-}
+
 //function startCapture(){
 //  video.play();
 
@@ -429,51 +466,7 @@ function clearConfidenceGraph(){
 // //   }
 // //
 // // }, Math.round(1000));
-heartbeatTimer = setInterval(function(){
-    var duration = Math.round(((60/hrAv) * 1000)/4);
-    if (confidenceGraph){
-       if (toggle % 2 == 0){
-          circleSVG.select("circle")
-                 .transition()
-                 .attr("r", r)
-                 .duration(duration);
-        } else {
-          circleSVG.select("circle")
-                 .transition()
-                 .attr("r", r + 15)
-                 .duration(duration);
-        }
-        if (toggle == 10){
-          toggle = 0;
-        }
-        toggle++;
-      }
-  }, Math.round(((60/hrAv) * 1000)/2));
-  heartbeatTimer = setInterval(function(){
-      var duration = Math.round(((60/hrAv) * 1000)/4);
-      if (confidenceGraph){
-         if (toggle % 2 == 0){
-            circleSVG.select("circle")
-                   .transition()
-                   .attr("r", r)
-                   .duration(duration);
-          } else {
-            circleSVG.select("circle")
-                   .transition()
-                   .attr("r", r + 15)
-                   .duration(duration);
-          }
-          if (toggle == 10){
-            toggle = 0;
-          }
-          toggle++;
-        }
-    }, Math.round(((60/hrAv) * 1000)/2));
 
-
-    // ** begin headtracking! **
-  //  headtrack();
-//  };
 
 
           });
