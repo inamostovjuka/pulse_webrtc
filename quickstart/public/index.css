@@ -147,30 +147,14 @@ div#controls div#log p {
 }
 canvas, canvasOverlay {
   width: 100%;
-  height: 100%;
+  height: 90%;
   position: absolute;
   top: 0;
   left: 0;
 /* video, canvas {
   position: relative; */
 }
-#rawDataLabel {
-  font-size: 12pt;
-  color: steelblue;
-  position: relative;
-  display: none;
-  right: 0px;
-  top: 175px;
-}
 
-#graphs {
-  position: relative;
-  top: 50px;
-  z-index: -1;
-  width: 95%;
-  margin: auto;
-  height: 200px;
-}
 #graph {
   width: 600px;
   height: 210px;
@@ -180,8 +164,66 @@ canvas, canvasOverlay {
   z-index: -1;
   background-color: #DA755C;
 }
+
+
+
+/* ## GRAPHS ## */
+
+#graphs {
+  position: relative;
+  top: -200px;
+  z-index: -1;
+  width: 95%;
+  margin: auto;
+  height: 200px;
+}
 #confidenceGraph {
   width: 600px;
   height: 160px;
   margin: 20px;
+}
+
+.graph {
+  float: left;
+  margin: 20px;
+}
+
+#confidenceGraph {
+  float: left;
+}
+
+#heartbeat {
+  height: 400px;
+  width: 400px;
+  position: relative;
+  top: 55px;
+  left: 38%;
+  z-index: -1;
+}
+
+path {
+  stroke: #DA755C;
+  stroke-width: 2;
+  fill: none;
+}
+
+#rawDataLabel {
+  font-size: 12pt;
+  color: #DA755C;
+  position: relative;
+  display: none;
+  right: 625px;
+  top: 175px;
+}
+
+.axis {
+  shape-rendering: crispEdges;
+}
+
+.x.axis .minor {
+  stroke-opacity: .5;
+}
+
+.x.axis path {
+  display: none;
 }

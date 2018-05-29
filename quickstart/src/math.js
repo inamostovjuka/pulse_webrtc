@@ -73,4 +73,9 @@ function filterFreq(fftArray, freqs, framerate){
 	freqs = {normalizedFreqs: normalizedFreqs, filteredFreqBin: filteredFreqBin, freq_in_hertz: freq_in_hertz}
 	return freqs;
 }
-module.exports = normalize;
+
+module.exports = {
+    normalize: normalize,
+    frequencyExtract: frequencyExtract,
+    mean:mean,
+};

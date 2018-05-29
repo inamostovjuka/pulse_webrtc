@@ -59,3 +59,6 @@ examples/codecpreferences/public/helpers.js
 examples/localvideofilter/public/helpers.js
 examples/localvideosnapshot/public/helpers.js
 examples/mediadevices/public/helpers.js
+
+#python server
+pyserver/env
